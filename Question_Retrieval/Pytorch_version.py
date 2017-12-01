@@ -86,39 +86,40 @@ class LSTM(nn.Module):
             dropout = dropout, 
         )
         
-        # TODO: add weight as data is unbalanced
+        
 
     def forward(self, idts, idbs):
         # embedding layer
         xt = embedding_layer.forward(idts.ravel()) # flatten
         if self.weights is not None:
-            xt_w = self.weights[idts.ravel()]#.dimshuffle((0,'x'))
+            xt_w = self.weights[idts.ravel()]
             xt = xt * xt_w.reshape(xt_w.shape[0],1)
         xt = xt.reshape((idts.shape[0], idts.shape[1], self.n_e))
         xt = Variable(torch.from_numpy(xt)).float()
 
         xb = embedding_layer.forward(idbs.ravel())
+        # TODO: add weight as data is unbalanced
         if self.weights is not None:
-            xb_w = self.weights[idbs.ravel()]#.dimshuffle((0,'x'))
+            xb_w = self.weights[idbs.ravel()]
             xb = xb * xb_w.reshape(xb_w.shape[0],1)
         xb = xb.reshape((idbs.shape[0], idbs.shape[1], self.n_e))
         xb = Variable(torch.from_numpy(xb)).float()
+
         # lstm
         output_t, (ht, ct) = self.lstm(xt, None)
         output_b, (hb, cb) = self.lstm(xb, None)
         
         # self.ht = output_t#ht
         # self.hb = output_b#hb
+        # TODO: add pooling with no padding.
         if args['average']:
             ht = utils.average_without_padding(output_t, idts, padding_id)
             hb = utils.average_without_padding(output_b, idbs, padding_id)
         else:
             ht = output_t[-1]
             bb = output_b[-1]
-        say("h_avg_title dtype: {}\n".format(output_t.type))
+        #say("h_avg_title dtype: {}\n".format(type(output_t.data)))
         
-        
-        # TODO: add pooling with no padding.
         # ht = output_t[-1]
         # hb = output_b[-1]
         
@@ -163,20 +164,7 @@ def customized_loss(h_final, idps):
             l2_reg = LA.norm(layer.data.numpy(), 2)
         else:
             l2_reg = l2_reg + LA.norm(layer.data.numpy(), 2)
-#     params = [ ]
-#     for l in self.layers:
-#         params += l.params
-#     self.params = params
-#     say("num of parameters: {}\n".format(
-#         sum(len(x.get_value(borrow=True).ravel()) for x in params)
-#     ))
 
-#     l2_reg = None
-#     for p in params:
-#         if l2_reg is None:
-#             l2_reg = p.norm(2)
-#         else:
-#             l2_reg = l2_reg + p.norm(2)
     l2_reg = l2_reg * args['l2_reg']
 #   self.cost = self.loss + l2_reg
     loss  += l2_reg
@@ -239,22 +227,3 @@ for i in range(20):
             print "train loss", avrg_loss*1.0/N
             print "dev", dev_MAP, dev_MRR, dev_P1, dev_P5
             print "test", test_MAP, test_MRR, test_P1, test_P5
-    # N =len(train_batches)
-    # for j in xrange(N):
-    #     # get current batch
-    #     idts, idbs, idps = train_batches[i]
-    #     optimizer.zero_grad()
-        
-    #     h_final = lstm(idts, idbs)               # lstm output
-    #     loss = customized_loss(h_final, idps)     
-    #     optimizer.zero_grad()           # clear gradients for this training step
-    #     loss.backward()                 # backpropagation, compute gradients
-    #     optimizer.step()                # apply gradients
-    #     if j == N-1:
-    #         dev_MAP, dev_MRR, dev_P1, dev_P5 = evaluate(dev)
-    #         test_MAP, test_MRR, test_P1, test_P5 = evaluate(test)
-    #         print "running time:", time.time() - start
-    #         print "epoch", i
-    #         print "train loss", loss.data.numpy() #this is the last batch loss, should be ?
-    #         print "dev", dev_MAP, dev_MRR, dev_P1, dev_P5
-    #         print "test", test_MAP, test_MRR, test_P1, test_P5
