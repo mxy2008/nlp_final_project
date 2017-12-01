@@ -19,6 +19,11 @@ from evaluation import *
 import utils
 
 
+# # Model
+args = {'dropout':0.1, 'hidden_dim':200, 'depth':1, 'average':False, 'dev': 'askubuntu/dev.txt', \
+        'test': 'askubuntu/test.txt', 'normalize':0, 'l2_reg': 1e-5}
+
+
 # # load raw corpus
 corpus = 'askubuntu/text_tokenized.txt.gz'
 raw_corpus = read_corpus(corpus)
@@ -48,8 +53,8 @@ print 'padding_id', padding_id
 train = read_annotations('askubuntu/train_random.txt')
 
 batch_size = 25#40
-average = False
-train_batches = create_batches(ids_corpus, train, batch_size, padding_id, pad_left = not average)
+
+train_batches = create_batches(ids_corpus, train, batch_size, padding_id, pad_left = not args['average'])
 
 print 'train_batch[0][0]', len(train_batches[0][0]), len(train_batches[0][1]), len(train_batches[0][2])
 say("create batches\n")
@@ -59,11 +64,6 @@ say("{} batches, {} tokens in total, {} triples in total\n".format(
         sum(len(x[2].ravel()) for x in train_batches)
     ))
 train_batches = None
-
-
-# # Model
-args = {'dropout':0.1, 'hidden_dim':200, 'depth':1, 'average':True, 'dev': 'askubuntu/dev.txt', \
-        'test': 'askubuntu/test.txt', 'normalize':0, 'l2_reg': 1e-5}
 
 
 class LSTM(nn.Module):
@@ -79,14 +79,20 @@ class LSTM(nn.Module):
         depth = self.depth = args['depth'] # layer depth
         dropout = self.dropout = args['dropout']
 
-        self.lstm = nn.LSTM(     
-            input_size = n_e,  
-            hidden_size = n_d,     
-            num_layers = depth,      
-            dropout = dropout, 
+        self.lstm = nn.LSTM(
+            input_size = n_e,
+            hidden_size = n_d,
+            num_layers = depth,
+            dropout = dropout,
         )
         
-        
+    def init_hidden(self, batch_size):
+        # Before we've done anything, we dont have any hidden state.
+        # Refer to the Pytorch documentation to see exactly
+        # why they have this dimensionality.
+        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
+        return (autograd.Variable(torch.zeros(1, batch_size, self.n_d)),
+                autograd.Variable(torch.zeros(1, batch_size, self.n_d)))
 
     def forward(self, idts, idbs):
         # embedding layer
@@ -106,8 +112,11 @@ class LSTM(nn.Module):
         xb = Variable(torch.from_numpy(xb)).float()
 
         # lstm
-        output_t, (ht, ct) = self.lstm(xt, None)
-        output_b, (hb, cb) = self.lstm(xb, None)
+        # output_t, (ht, ct) = self.lstm(xt, None)
+        # output_b, (hb, cb) = self.lstm(xb, None)
+        output_t, self.hidden_1 = self.lstm(xt, self.hidden_1)
+        output_b, self.hidden_2 = self.lstm(xb, self.hidden_2)
+
         
         # self.ht = output_t#ht
         # self.hb = output_b#hb
@@ -117,7 +126,7 @@ class LSTM(nn.Module):
             hb = utils.average_without_padding(output_b, idbs, padding_id)
         else:
             ht = output_t[-1]
-            bb = output_b[-1]
+            hb = output_b[-1]
         #say("h_avg_title dtype: {}\n".format(type(output_t.data)))
         
         # ht = output_t[-1]
@@ -174,6 +183,8 @@ def evaluate(data):
     lstm.eval()
     res = [ ]
     for idts, idbs, labels in data:
+        lstm.hidden_1 = lstm.init_hidden(idts.shape[1])
+        lstm.hidden_2 = lstm.init_hidden(idbs.shape[1])
         h_final = lstm(idts, idbs)
         h_final = torch.squeeze(h_final)
         scores = torch.mm(h_final[1:], torch.unsqueeze(h_final[0],1))
@@ -197,31 +208,33 @@ test = read_annotations(args['test'], K_neg=-1, prune_pos_cnt=-1)
 
 for i in range(20):
     start_time = time.time()
-    train = read_annotations('askubuntu/train_random.txt')
-    dev = read_annotations(args['dev'], K_neg=-1, prune_pos_cnt=-1)
-    test = read_annotations(args['test'], K_neg=-1, prune_pos_cnt=-1)
+    #train = read_annotations('askubuntu/train_random.txt')
+    #dev = read_annotations(args['dev'], K_neg=-1, prune_pos_cnt=-1)
+    #test = read_annotations(args['test'], K_neg=-1, prune_pos_cnt=-1)
     train_batches = create_batches(ids_corpus, train, batch_size,
-                                padding_id, pad_left = not average)
+                                padding_id, pad_left = not args['average'])
     
-    dev = create_eval_batches(ids_corpus, dev, padding_id, pad_left = not average)
-    test = create_eval_batches(ids_corpus, test, padding_id, pad_left = not average)
+    dev_batches = create_eval_batches(ids_corpus, dev, padding_id, pad_left = not args['average'])
+    test_batches = create_eval_batches(ids_corpus, test, padding_id, pad_left = not args['average'])
 
     N =len(train_batches)
     avrg_loss = 0
     for j in xrange(N):
+        #print i, j
         # get current batch
         idts, idbs, idps = train_batches[i]
         optimizer.zero_grad()
+        lstm.hidden_1 = lstm.init_hidden(idts.shape[1])
+        lstm.hidden_2 = lstm.init_hidden(idbs.shape[1])
         
         h_final = lstm(idts, idbs)      # lstm output
         loss = customized_loss(h_final, idps)     
-        optimizer.zero_grad()           # clear gradients for this training step
         loss.backward()                 # backpropagation, compute gradients
         optimizer.step()                # apply gradients
         avrg_loss += loss.data.numpy()[0]
         if j == N-1:
-            dev_MAP, dev_MRR, dev_P1, dev_P5 = evaluate(dev)
-            test_MAP, test_MRR, test_P1, test_P5 = evaluate(test)
+            dev_MAP, dev_MRR, dev_P1, dev_P5 = evaluate(dev_batches)
+            test_MAP, test_MRR, test_P1, test_P5 = evaluate(test_batches)
             print "running time:", time.time() - start_time
             print "epoch", i
             print "train loss", avrg_loss*1.0/N
