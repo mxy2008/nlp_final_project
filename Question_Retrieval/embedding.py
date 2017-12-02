@@ -91,7 +91,7 @@ def read_annotations(path, K_neg=20, prune_pos_cnt=10):
                     s.add(q)
             lst.append((pid, qids, qlabels))
             count += 1
-            if count >= 1000:
+            if count >= 500 :
                 break
     return lst
 
@@ -309,6 +309,7 @@ class EmbeddingLayer(object):
         self.embeddings.set_value(param_list[0].get_value())
 
 def create_batches(ids_corpus, data, batch_size, padding_id, perm=None, pad_left=True):
+    # shuffle the data
     if perm is None:
         perm = range(len(data))
         random.shuffle(perm)
@@ -321,10 +322,11 @@ def create_batches(ids_corpus, data, batch_size, padding_id, perm=None, pad_left
     triples = [ ]
     batches = [ ]
     for u in xrange(N):
-        i = perm[u]
+        i = perm[u] #shuffle the data
         pid, qids, qlabels = data[i]
         if pid not in ids_corpus: continue
         cnt += 1
+
         for id in [pid] + qids:
             if id not in pid2id:
                 if id not in ids_corpus: continue
@@ -332,13 +334,16 @@ def create_batches(ids_corpus, data, batch_size, padding_id, perm=None, pad_left
                 t, b = ids_corpus[id]
                 titles.append(t)
                 bodies.append(b)
+        
         pid = pid2id[pid]
         pos = [ pid2id[q] for q, l in zip(qids, qlabels) if l == 1 and q in pid2id ]
         neg = [ pid2id[q] for q, l in zip(qids, qlabels) if l == 0 and q in pid2id ]
         triples += [ [pid,x]+neg for x in pos ]
 
         if cnt == batch_size or u == N-1:
+            #print '1', len(titles), len(bodies)
             titles, bodies = create_one_batch(titles, bodies, padding_id, pad_left)
+            #print '2', len(titles), len(bodies)
             triples = create_hinge_batch(triples)
             batches.append((titles, bodies, triples))
             titles = [ ]
@@ -354,9 +359,12 @@ def create_eval_batches(ids_corpus, data, padding_id, pad_left):
         titles = [ ]
         bodies = [ ]
         for id in [pid]+qids:
+            #print id
             t, b = ids_corpus[id]
+            #print t
             titles.append(t)
             bodies.append(b)
+        #print len(titles), len(bodies)
         titles, bodies = create_one_batch(titles, bodies, padding_id, pad_left)
         lst.append((titles, bodies, np.array(qlabels, dtype="int32")))
     return lst

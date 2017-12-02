@@ -20,8 +20,8 @@ import utils
 
 
 # # Model
-args = {'dropout':0.2, 'hidden_dim':240, 'depth':1, 'average':True, 'dev': 'askubuntu/dev.txt', \
-        'test': 'askubuntu/test.txt', 'normalize':0, 'l2_reg': 1e-5}
+args = {'dropout':0.1, 'hidden_dim':200, 'depth':1, 'average':True, 'dev': 'askubuntu/dev.txt', \
+        'test': 'askubuntu/test.txt', 'normalize':0, 'l2_reg': 1e-5, 'reweight': False}
 
 
 # # load raw corpus
@@ -49,7 +49,8 @@ padding_id = embedding_layer.vocab_map["<padding>"]
 print 'padding_id', padding_id
 
 # if args['reweight']:
-    # weights = create_idf_weights('askubuntu/text_tokenized.txt.gz', embedding_layer)
+#     print 'add weights to the model'
+#     weights = create_idf_weights('askubuntu/text_tokenized.txt.gz', embedding_layer)
 
 # # Create training batches
 train = read_annotations('askubuntu/train_random.txt')
@@ -76,6 +77,9 @@ class LSTM(nn.Module):
 
         self.args = args
         self.embedding_layer = embedding_layer
+        if args['reweight']:
+            print 'add weights to the model'
+            weights = create_idf_weights('askubuntu/text_tokenized.txt.gz', embedding_layer)
         self.weights = weights
         
         n_d = self.n_d = args['hidden_dim'] # hidden dimension
@@ -88,8 +92,8 @@ class LSTM(nn.Module):
         self.lstm = nn.LSTM(
             input_size = n_e,
             hidden_size = n_d,
-            num_layers = depth,
-            dropout = dropout,
+            num_layers = depth#,
+            #dropout = dropout,
         )
 
         self.hidden_1 = None
@@ -100,8 +104,10 @@ class LSTM(nn.Module):
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (autograd.Variable(torch.zeros(1, batch_size, self.n_d)),
-                autograd.Variable(torch.zeros(1, batch_size, self.n_d)))
+        #return (autograd.Variable(torch.zeros(1, batch_size, self.n_d)),
+        #        autograd.Variable(torch.zeros(1, batch_size, self.n_d)))
+        return (autograd.Variable(torch.zeros(batch_size, 1, self.n_d)),
+                autograd.Variable(torch.zeros(batch_size, 1, self.n_d)))
 
 
     def forward(self, idts, idbs):
@@ -149,19 +155,17 @@ class LSTM(nn.Module):
 
 
 # initialize the model
-lstm = LSTM(args, embedding_layer)
-
-optimizer = optim.Adagrad(lstm.parameters(), lr=0.001)
-
+lstm_model = LSTM(args, embedding_layer)
+optimizer = optim.Adagrad(lstm_model.parameters(), lr=0.01) # changed from 0.0001 ro 0.01
 # get the number of parameters of the model
 num_params = 0
-for layer in lstm.parameters():
+for layer in lstm_model.parameters():
     print type(layer), layer.data.shape, len(layer.data.numpy().ravel())
     num_params += len(layer.data.numpy().ravel())
 say("num of parameters: {}\n".format(num_params))
 
 
-def customized_loss(h_final, idps):
+def customized_loss(h_final, idps, lstm_model):
 
     h_final = torch.squeeze(h_final)
     xp = h_final[torch.from_numpy(idps.ravel()).long()]
@@ -179,7 +183,7 @@ def customized_loss(h_final, idps):
 
     # TODO: add regularization
     l2_reg = None
-    for layer in lstm.parameters():
+    for layer in lstm_model.parameters():
         if l2_reg is None:
             l2_reg = torch.norm(layer.data, 2)
         else:
@@ -229,13 +233,13 @@ def customized_loss(h_final, idps):
 
 
 
-def evaluate(data):
-    lstm.eval()
+def evaluate(data, lstm_model):
+    lstm_model.eval()
     res = [ ]
     for idts, idbs, labels in data:
-        lstm.hidden_1 = lstm.init_hidden(idts.shape[1])
-        lstm.hidden_2 = lstm.init_hidden(idbs.shape[1])
-        h_final = lstm(idts, idbs)
+        lstm_model.hidden_1 = lstm_model.init_hidden(idts.shape[1])
+        lstm_model.hidden_2 = lstm_model.init_hidden(idbs.shape[1])
+        h_final = lstm_model(idts, idbs)
         h_final = torch.squeeze(h_final)
         scores = torch.mm(h_final[1:], torch.unsqueeze(h_final[0],1))
         scores = torch.squeeze(scores).data.numpy()
@@ -250,6 +254,26 @@ def evaluate(data):
     P5 = e.Precision(5)*100
     return MAP, MRR, P1, P5
 
+    # lstm.eval()
+    # res = [ ]
+    # for idts, idbs, labels in data:
+    #     lstm.hidden_1 = lstm.init_hidden(idts.shape[1])
+    #     lstm.hidden_2 = lstm.init_hidden(idbs.shape[1])
+    #     h_final = lstm(idts, idbs)
+    #     h_final = torch.squeeze(h_final)
+    #     scores = torch.mm(h_final[1:], torch.unsqueeze(h_final[0],1))
+    #     scores = torch.squeeze(scores).data.numpy()
+    #     assert len(scores) == len(labels)
+    #     ranks = (-scores).argsort()
+    #     ranked_labels = labels[ranks]
+    #     res.append(ranked_labels)
+    # e = Evaluation(res)
+    # MAP = e.MAP()*100
+    # MRR = e.MRR()*100
+    # P1 = e.Precision(1)*100
+    # P5 = e.Precision(5)*100
+    # return MAP, MRR, P1, P5
+
 
 # train
 train = read_annotations('askubuntu/train_random.txt')
@@ -258,9 +282,7 @@ test = read_annotations(args['test'], K_neg=-1, prune_pos_cnt=-1)
 
 for i in range(20):
     start_time = time.time()
-    train = read_annotations('askubuntu/train_random.txt')
-    dev = read_annotations(args['dev'], K_neg=-1, prune_pos_cnt=-1)
-    test = read_annotations(args['test'], K_neg=-1, prune_pos_cnt=-1)
+
     train_batches = create_batches(ids_corpus, train, batch_size,
                                 padding_id, pad_left = not args['average'])
     
