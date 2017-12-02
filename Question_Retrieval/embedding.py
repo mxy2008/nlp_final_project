@@ -91,7 +91,7 @@ def read_annotations(path, K_neg=20, prune_pos_cnt=10):
                     s.add(q)
             lst.append((pid, qids, qlabels))
             count += 1
-            if count >= 500:
+            if count >= 1000:
                 break
     return lst
 
