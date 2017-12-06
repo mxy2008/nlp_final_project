@@ -118,10 +118,9 @@ class Model(nn.Module):
         
         # get final vector encoding 
         h_final = (ht+hb)*0.5
-        self.h_final = h_final
+        self.h_final = f.normalize(h_final, p=2, dim=1)
         
-        return h_final
-
+        return self.h_final
     #def train_model(self, ids_corpus, train, dev_batches=None, test_batches=None):
         
 
@@ -145,8 +144,9 @@ def customized_loss(h_final, idps, model):
     neg_scores = torch.sum(torch.unsqueeze(query_vecs, dim=1)*xp[:,2:,:], dim=2)/(x_len*y_len)
     # num query
     neg_scores = torch.max(neg_scores, dim=1)[0]
-    diff = neg_scores - pos_scores + 1.0
-    loss = torch.mean((diff>0).float()*diff)
+    diff = neg_scores - pos_scores + args.margin#1.0
+    loss = torch.mean((diff>0).float()*diff) 
+    print torch.mean((diff>0).float()).data
     
     # TODO: add regularization
     l2_reg = None
@@ -275,15 +275,16 @@ def main(args):
                 avrg_loss += loss.data.numpy()[0]
                 avrg_cost += cost.data.numpy()[0]
                 print i, j, loss.data.numpy()[0], cost.data.numpy()[0]
-                if j == N-1:
+                if (j+1)%50 == 0 or j == N-1:
                     dev_MAP, dev_MRR, dev_P1, dev_P5 = evaluate(args, dev_batches, model)
                     test_MAP, test_MRR, test_P1, test_P5 = evaluate(args, test_batches, model)
                     print "running time:", time.time() - start_time
                     print "epoch", i
-                    print "train loss", avrg_loss*1.0/N, avrg_cost*1.0/N
+                    #print "train loss", avrg_loss*1.0/N, avrg_cost*1.0/N
+                    print "train loss", avrg_loss*1.0/50, avrg_cost*1.0/50
                     print "dev", dev_MAP, dev_MRR, dev_P1, dev_P5
                     print "test", test_MAP, test_MRR, test_P1, test_P5
-
+                    avrg_loss, avrg_cost = 0, 0 #add this line when evaluate every 50 batches
 
 
 
@@ -292,7 +293,7 @@ if __name__ == "__main__":
     argparser.add_argument("--average", type = int, default = 1)
     argparser.add_argument("--batch_size", type = int, default = 40)
     argparser.add_argument("--embeddings", type = str, default = "")
-    argparser.add_argument("--lstm", type = int, default = 1)
+    #argparser.add_argument("--lstm", type = int, default = 1)
     argparser.add_argument("--corpus", type = str)
     argparser.add_argument("--train", type = str, default = "")
     argparser.add_argument("--test", type = str, default = "")
@@ -307,6 +308,7 @@ if __name__ == "__main__":
     argparser.add_argument("--max_epoch", type = int, default = 50)
     argparser.add_argument("--max_seq_len", type = int, default = 100)
     argparser.add_argument("--normalize", type = int, default = 1)
+    argparser.add_argument("--margin", type = float, default = 1.0)
     argparser.add_argument("--reweight", type = int, default = 0)
     argparser.add_argument("--verbose", type = int, default = 0)
     argparser.add_argument("--cut_off", type = int, default = 2) # original code default 1
