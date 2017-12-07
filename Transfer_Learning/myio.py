@@ -36,9 +36,9 @@ def map_corpus(raw_corpus, embedding_layer, max_len=100):
         ids_corpus[id] = item   
     return ids_corpus
 
-def read_target_file(path, K_neg=20, prune_pos_cnt=10, is_neg=False):
+def read_target_file(path, prune_pos_cnt=10, is_neg=False):
     """
-        used by read_target_annotation
+        read the target pos and neg files and save them to dictionaries
     """
     dic = defaultdict(list)
     count = 0
@@ -51,18 +51,17 @@ def read_target_file(path, K_neg=20, prune_pos_cnt=10, is_neg=False):
                 if len(dic[pid]) == 0 or (len(dic[pid]) > prune_pos_cnt and prune_pos_cnt != -1): 
                     continue
             
-    if is_neg:
-        for key in dic:
-            if K_neg != -1 and len(dic[key]) > K_neg:
-                neg = dic[key]
-                random.shuffle(neg)
-                dic[key] = neg[:K_neg]
-    print count
+    # if is_neg:
+    #     for key in dic:
+    #         if K_neg != -1 and len(dic[key]) > K_neg:
+    #             neg = dic[key]
+    #             random.shuffle(neg)
+    #             dic[key] = neg[:K_neg]
+    #print count
     return dic
 
-def read_target_annotations(dic_pos, dic_neg, max_len=20):
+def read_target_annotations(dic_pos, dic_neg):
     lst = [ ]
-    count = 0
     for pid in dic_pos.keys():
         if pid not in dic_neg:
             continue
@@ -71,22 +70,17 @@ def read_target_annotations(dic_pos, dic_neg, max_len=20):
         s = set()
         qids = [ ]
         qlabels = [ ]
+        for q in neg:
+            if q not in s:
+                qids.append(q)
+                qlabels.append(0 if q not in pos else 1)
+                s.add(q)
         for q in pos:
             if q not in s:
                 qids.append(q)
-                qlabels.append(1 if q not in neg else 0)
+                qlabels.append(1)
                 s.add(q)
-        count = max_len-len(qids)
-        for q in neg:
-            if q not in s and count > 0:
-                qids.append(q)
-                qlabels.append(0)
-                s.add(q)
-                count -= 1
         lst.append((pid, qids, qlabels))
-        count += 1
-        if count >= 500 :
-            break
     return lst
 
 def read_annotations(path, K_neg=20, prune_pos_cnt=10):
@@ -318,6 +312,7 @@ def create_train_batches(ids_corpus, data, batch_size, padding_id, pad_left):
 
 def create_eval_batches(ids_corpus, data, padding_id, pad_left):
     lst = [ ]
+    count = 0
     for pid, qids, qlabels in data:
         titles = [ ]
         bodies = [ ]
@@ -330,6 +325,9 @@ def create_eval_batches(ids_corpus, data, padding_id, pad_left):
         #print len(titles), len(bodies)
         titles, bodies = create_one_batch(titles, bodies, padding_id, pad_left)
         lst.append((titles, bodies, np.array(qlabels, dtype="int32")))
+        count += 1
+        if count >1500:
+            break
     return lst
 
 def create_one_batch(titles, bodies, padding_id, pad_left):
