@@ -96,6 +96,8 @@ class EmbeddingLayer(object):
             # all word vectors
             emb_vals = [ ]
             for word, vector in embs:
+                if word in vocab_map:
+                    print word, vocab_map[word]
                 assert word not in vocab_map, "Duplicate words in initial embeddings"
                 vocab_map[word] = len(vocab_map)
                 emb_vals.append(vector)
