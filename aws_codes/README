@@ -29,51 +29,48 @@ in the "code" directory
 Question 1: 
 cd Question_Retrieval
 python question_retrieval.py --layer lstm \
---corpus ../../data/askubuntu/text_tokenized.txt.gz \
+--corpus ../../data/askubuntu/text_tokenized.txt \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
 --train ../../data/askubuntu/train_random.txt \
 --dev ../../data/askubuntu/dev.txt \
 --test ../../data/askubuntu/test.txt \
---l2_reg 0 -d 100 --batch_size 16 -lr 0.001
+--l2_reg 0 -d 100 --batch_size 16 -lr 0.001 --cuda 0
 
 Question 2:
 cd Transfer_Learning
 1. tfidf baseline
 python tfidf_baseline.py \
---s_corpus '../../data/askubuntu/text_tokenized.txt' \
---t_corpus '../../data/Android/corpus.tsv.gz' \
---test_pos '../../data/Android/test.pos.txt' \
---test_neg '../../data/Android/test.neg.txt' \
---dev_pos '../../data/Android/dev.pos.txt' \
---dev_neg '../../data/Android/dev.neg.txt'
+--s_corpus ../../data/askubuntu/text_tokenized.txt \
+--t_corpus ../../data/Android/corpus.tsv.gz \
+--test_pos ../../data/Android/test.pos.txt \
+--test_neg ../../data/Android/test.neg.txt \
+--dev_pos ../../data/Android/dev.pos.txt \
+--dev_neg ../../data/Android/dev.neg.txt
 
 2. direct transfer
 python direct_transfer.py --layer lstm \
 --corpus ../../data/askubuntu/text_tokenized.txt \
---corpus_t ../../data/'Android/corpus.tsv.gz' \
+--corpus_t ../../data/Android/corpus.tsv.gz \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
 --train ../../data/askubuntu/train_random.txt \
 --dev ../../data/askubuntu/dev.txt \
 --test ../../data/askubuntu/test.txt \
---test_pos '../../data/Android/test.pos.txt' \
---test_neg '../../data/Android/test.neg.txt' \
---dev_pos '../../data/Android/dev.pos.txt' \
---dev_neg '../../data/Android/dev.neg.txt' \
---l2_reg 0 -d 100 --batch_size 16 -lr 0.001
+--test_pos ../../data/Android/test.pos.txt \
+--test_neg ../../data/Android/test.neg.txt \
+--dev_pos ../../data/Android/dev.pos.txt \
+--dev_neg ../../data/Android/dev.neg.txt \
+--l2_reg 0 -d 100 --batch_size 16 -lr 0.001 --cuda 0
 
 3. adversarial domain adaptation
-python direct_transfer.py --layer lstm \
+python adversarial.py --layer lstm \
 --corpus ../../data/askubuntu/text_tokenized.txt \
---corpus_t ../../data/'Android/corpus.tsv.gz' \
+--corpus_t ../../data/Android/corpus.tsv.gz \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
 --train ../../data/askubuntu/train_random.txt \
 --dev ../../data/askubuntu/dev.txt \
 --test ../../data/askubuntu/test.txt \
---test_pos '../../data/Android/test.pos.txt' \
---test_neg '../../data/Android/test.neg.txt' \
---dev_pos '../../data/Android/dev.pos.txt' \
---dev_neg '../../data/Android/dev.neg.txt' \
---l2_reg 0 -d 100 --batch_size 16 -lr 0.001
-
-
-TODO
+--test_pos ../../data/Android/test.pos.txt \
+--test_neg ../../data/Android/test.neg.txt \
+--dev_pos ../../data/Android/dev.pos.txt \
+--dev_neg ../../data/Android/dev.neg.txt \
+--l2_reg 0 -d 100 --batch_size 16 -lr 0.001 --cuda 0

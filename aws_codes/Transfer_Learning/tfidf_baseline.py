@@ -1,13 +1,10 @@
+import sys
 import numpy as np
 import argparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 sys.path.append('..')
-from embedding import *
-from evaluation import *
-from myio import *
-from utils import *
-from meter import *
+from misc import *
 
 def read_corpus(path):
     total_corpus = []
@@ -53,11 +50,11 @@ def evaluate(data, tfidf, id_to_idx):
         ranks = (-scores).argsort()
         ranked_labels = labels[ranks]
         res.append(ranked_labels)
-    e = Evaluation(res)
-    MAP = e.MAP()*100
-    MRR = e.MRR()*100
-    P1 = e.Precision(1)*100
-    P5 = e.Precision(5)*100
+    e = Evaluation(None, None, None)
+    MAP = e.MAP(res)*100
+    MRR = e.MRR(res)*100
+    P1 = e.Precision(res,1)*100
+    P5 = e.Precision(res,5)*100
     #return MAP, MRR, P1, P5
     return m.value(0.05), MAP, MRR, P1, P5
 
