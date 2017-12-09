@@ -2,10 +2,11 @@ import numpy as np
 import argparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+sys.path.append('..')
 from embedding import *
 from evaluation import *
 from myio import *
-import utils
+from utils import *
 from meter import *
 
 def read_corpus(path):

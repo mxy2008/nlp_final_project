@@ -4,9 +4,9 @@ import random
 import numpy as np
 from collections import Counter
 
-# def say(s, stream=sys.stdout):
-#     stream.write(s)
-#     stream.flush()
+def say(s, stream=sys.stdout):
+    stream.write(s)
+    stream.flush()
 
 # def read_corpus(path):
 #     empty_cnt = 0
