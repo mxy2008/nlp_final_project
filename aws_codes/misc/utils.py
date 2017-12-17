@@ -41,7 +41,7 @@ def customized_loss(args, h_final, idps, model):
 
     h_final = torch.squeeze(h_final)
     xp = h_final[idps.view(idps.size()[0]*idps.size()[1])]
-    xp = xp.view((idps.size()[0], idps.size()[1], args.hidden_dim))
+    xp = xp.view((idps.size()[0], idps.size()[1], args.hidden_dim*2))
     # num query * n_d
     query_vecs = xp[:,0,:]
      # num query

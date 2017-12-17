@@ -26,10 +26,10 @@ directory structure:
 Running command:
 in the "code" directory
 
-Question 1: 
+Question 1:
 cd Question_Retrieval
 python question_retrieval.py --layer lstm \
---corpus ../../data/askubuntu/text_tokenized.txt \
+--corpus ../../data/askubuntu/text_tokenized.txt.gz \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
 --train ../../data/askubuntu/train_random.txt \
 --dev ../../data/askubuntu/dev.txt \
@@ -40,7 +40,7 @@ Question 2:
 cd Transfer_Learning
 1. tfidf baseline
 python tfidf_baseline.py \
---s_corpus ../../data/askubuntu/text_tokenized.txt \
+--s_corpus ../../data/askubuntu/text_tokenized.txt.gz \
 --t_corpus ../../data/Android/corpus.tsv.gz \
 --test_pos ../../data/Android/test.pos.txt \
 --test_neg ../../data/Android/test.neg.txt \
@@ -49,7 +49,7 @@ python tfidf_baseline.py \
 
 2. direct transfer
 python direct_transfer.py --layer lstm \
---corpus ../../data/askubuntu/text_tokenized.txt \
+--corpus ../../data/askubuntu/text_tokenized.txt.gz \
 --corpus_t ../../data/Android/corpus.tsv.gz \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
 --train ../../data/askubuntu/train_random.txt \
@@ -63,7 +63,7 @@ python direct_transfer.py --layer lstm \
 
 3. adversarial domain adaptation
 python adversarial.py --layer lstm \
---corpus ../../data/askubuntu/text_tokenized.txt \
+--corpus ../../data/askubuntu/text_tokenized.txt.gz \
 --corpus_t ../../data/Android/corpus.tsv.gz \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
 --train ../../data/askubuntu/train_random.txt \
