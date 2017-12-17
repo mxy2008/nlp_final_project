@@ -204,6 +204,7 @@ def create_one_batch(titles, bodies, padding_id, pad_left):
         bodies = np.column_stack([ np.pad(x,(max_body_len-len(x),0),'constant',
                                 constant_values=padding_id) for x in bodies])
     else:
+	#print 'pad_left', pad_left
         titles = np.column_stack([ np.pad(x,(0,max_title_len-len(x)),'constant',
                                 constant_values=padding_id) for x in titles])
         bodies = np.column_stack([ np.pad(x,(0,max_body_len-len(x)),'constant',

@@ -67,16 +67,17 @@ def main(args):
         say("num of parameters: {}\n".format(num_params))
 
         if args.cuda:
-                model.cuda()
+            model.cuda()
 
         #train_eval = read_annotations(args.train)
-        train_eval = create_eval_batches(ids_corpus, train[:200], padding_id, pad_left = not args.average)
+        train_eval = create_eval_batches(ids_corpus, train[:20], padding_id, pad_left = not args.average)
         evaluation = Evaluation(args, embedding_layer, padding_id)
         print "evaluation class created"
 
         for i in range(args.max_epoch):
+	    print "epoch", i
             start_time = time.time()
-            train_batches = create_batches(ids_corpus, train, args.batch_size,
+            train_batches = create_batches(ids_corpus, train[:50], args.batch_size,
                                         padding_id, pad_left = not args.average)
 
             N =len(train_batches)

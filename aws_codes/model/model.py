@@ -28,7 +28,7 @@ class Model(nn.Module):
                 input_size = n_e,
                 hidden_size = n_d,
                 num_layers = depth,
-                bidirectional = True,
+                # bidirectional = True,
                 # dropout = dropout,
             )
 
@@ -48,11 +48,11 @@ class Model(nn.Module):
     def init_hidden(self, batch_size):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
         if self.args.cuda:
-            return (autograd.Variable(torch.zeros(self.depth*2, batch_size, self.n_d)).cuda(),
-                    autograd.Variable(torch.zeros(self.depth*2, batch_size, self.n_d)).cuda())
+            return (autograd.Variable(torch.zeros(self.depth, batch_size, self.n_d)).cuda(),
+                    autograd.Variable(torch.zeros(self.depth, batch_size, self.n_d)).cuda())
         else:
-            return (autograd.Variable(torch.zeros(self.depth*2, batch_size, self.n_d)),
-                    autograd.Variable(torch.zeros(self.depth*2, batch_size, self.n_d)))
+            return (autograd.Variable(torch.zeros(self.depth, batch_size, self.n_d)),
+                    autograd.Variable(torch.zeros(self.depth, batch_size, self.n_d)))
 
 
     def forward(self, xt, xb, mask_t, mask_b):
@@ -103,7 +103,7 @@ class domain_classifier(nn.Module):
         super(domain_classifier, self).__init__()
 
         self.args = args 
-        self.fc1 = nn.Linear(args.hidden_dim*2, 100) 
+        self.fc1 = nn.Linear(args.hidden_dim, 100) 
         self.fc2 = nn.Linear(100, 1)
         self.drop = nn.Dropout2d(0.25)
 

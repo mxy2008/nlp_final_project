@@ -14,6 +14,7 @@ class Evaluation():
 
     def __init__(self, args, embedding_layer, padding_id):
 
+	print "initializing evaluation class"
         self.args = args
         self.embedding_layer = embedding_layer
         self.padding_id = padding_id

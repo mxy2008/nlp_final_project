@@ -110,7 +110,7 @@ def main(args):
         for i in range(args.max_epoch):
             start_time = time.time()
             
-            train_batches = create_batches(ids_corpus, train[:50], args.batch_size,
+            train_batches = create_batches(ids_corpus, train, args.batch_size,
                                         padding_id, pad_left = not args.average)
 
             N =len(train_batches)
