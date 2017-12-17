@@ -22,11 +22,12 @@ directory structure:
         |--- adversarial.py
         |--- direct_transfer.py
         |--- tfidf_baseline.py
+        |--- wgan.py
 
 Running command:
 in the "code" directory
 
-Question 1:
+Question 1: 
 cd Question_Retrieval
 python question_retrieval.py --layer lstm \
 --corpus ../../data/askubuntu/text_tokenized.txt.gz \
@@ -63,6 +64,20 @@ python direct_transfer.py --layer lstm \
 
 3. adversarial domain adaptation
 python adversarial.py --layer lstm \
+--corpus ../../data/askubuntu/text_tokenized.txt.gz \
+--corpus_t ../../data/Android/corpus.tsv.gz \
+--embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
+--train ../../data/askubuntu/train_random.txt \
+--dev ../../data/askubuntu/dev.txt \
+--test ../../data/askubuntu/test.txt \
+--test_pos ../../data/Android/test.pos.txt \
+--test_neg ../../data/Android/test.neg.txt \
+--dev_pos ../../data/Android/dev.pos.txt \
+--dev_neg ../../data/Android/dev.neg.txt \
+--l2_reg 0 -d 100 --batch_size 16 -lr 0.001 --cuda 0
+
+4. Wasserstein GAN 
+python wgan.py --layer lstm \
 --corpus ../../data/askubuntu/text_tokenized.txt.gz \
 --corpus_t ../../data/Android/corpus.tsv.gz \
 --embeddings ../../data/askubuntu/vector/vectors_pruned.200.txt.gz \
