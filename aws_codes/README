@@ -6,7 +6,7 @@ directory structure:
 |---data
     |--- Android
     |--- askubuntu
-|---code
+|---aws_codes
     |--- misc
         |--- embedding.py
         |--- evaluation.py
@@ -25,7 +25,7 @@ directory structure:
         |--- wgan.py
 
 Running command:
-in the "code" directory
+in the "aws_codes" directory
 
 Question 1: 
 cd Question_Retrieval
